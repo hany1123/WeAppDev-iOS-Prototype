@@ -1,0 +1,49 @@
+name: Build iOS Prototype IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build archive
+        run: |
+          xcodebuild \
+            -project WeAppDevProto.xcodeproj \
+            -scheme WeAppDevProto \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/WeAppDevProto.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            archive
+
+      - name: Package ad-hoc IPA
+        run: |
+          set -e
+          APP="$RUNNER_TEMP/WeAppDevProto.xcarchive/Products/Applications/WeAppDevProto.app"
+          test -d "$APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          codesign --force --sign - --timestamp=none Payload/WeAppDevProto.app
+          codesign -dv --verbose=2 Payload/WeAppDevProto.app || true
+          zip -qry WeAppDevProto-adhoc.ipa Payload
+          ls -lh WeAppDevProto-adhoc.ipa
+          unzip -l WeAppDevProto-adhoc.ipa | head -20
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WeAppDevProto-adhoc
+          path: WeAppDevProto-adhoc.ipa
+          if-no-files-found: error
