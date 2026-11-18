@@ -81,11 +81,11 @@ struct RewriteRule: Identifiable, Hashable {
 
 struct PluginItem: Identifiable, Hashable {
     let id: UUID
-    let name: String
-    let version: String
-    let kind: String
+    var name: String
+    var version: String
+    var kind: String
     var enabled: Bool
-    let html: String?
+    var html: String?
 
     init(name: String, version: String, kind: String, enabled: Bool, html: String? = nil) {
         self.id = UUID()
